@@ -212,34 +212,18 @@ class Chatbot:
 
     def _compare(self, session: Session, query: str, phones: list[Phone]) -> ChatResponse:
         a, b = phones
-        # Pull headline fields for a structured, grounded comparison.
-        rows = []
-        for phone in phones:
-            rows.append(
-                {
-                    "name": phone.name,
-                    "Chipset": phone.chipset or "Not available",
-                    "Battery": f"{phone.battery_capacity_mah} mAh" if phone.battery_capacity_mah else "Not available",
-                    "Display": f"{phone.display_size_inches} inches" if phone.display_size_inches else "Not available",
-                    "Main camera": f"{phone.main_camera_mp} MP" if phone.main_camera_mp else "Not available",
-                    "RAM": f"{phone.ram_gb} GB" if phone.ram_gb else "Not available",
-                    "Weight": f"{phone.weight_g} g" if phone.weight_g else "Not available",
-                }
-            )
+        from app.rag.comparison import build_comparison_text
+
+        table = build_comparison_text(session, a, b)
+
         # Add relevant spec-category detail from retrieval.
         retriever = self._get_retriever(session)
         hits = retriever.search(
-            f"{a.name} {b.name} {query}", k=6, phone_ids=[a.id, b.id]
+            f"{a.name} {b.name} {query}", k=4, phone_ids=[a.id, b.id]
         )
         extra = "\n".join(f"- {h.text[:400]}" for h, _s in hits)
 
-        facts_lines = []
-        for r in rows:
-            facts_lines.append(r["name"] + ":")
-            for k, v in r.items():
-                if k != "name":
-                    facts_lines.append(f"  {k}: {v}")
-        facts = "\n".join(facts_lines) + "\n\nAdditional details:\n" + extra
+        facts = table + "\n\nAdditional details:\n" + extra
 
         grounded = self._compose(
             query=query,
