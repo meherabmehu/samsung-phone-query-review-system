@@ -95,14 +95,28 @@ class Retriever:
             chunks.extend(_phone_to_chunks(phone))
         return cls(chunks, embedder=embedder)
 
-    def search(self, query: str, k: int = 5) -> list[tuple[Chunk, float]]:
-        """Return the top-k chunks with their cosine-similarity scores."""
+    def search(
+        self, query: str, k: int = 5, phone_ids: list[int] | None = None
+    ) -> list[tuple[Chunk, float]]:
+        """Return the top-k chunks with their cosine-similarity scores.
+
+        ``phone_ids`` optionally restricts results to specific phones (used to
+        keep single-phone answers precisely grounded).
+        """
         if not self.chunks or not query.strip():
             return []
         q = self.embedder.encode([query])[0]
         scores = self.vectors @ q  # vectors are unit-normalized
-        top_idx = np.argsort(-scores)[:k]
-        return [(self.chunks[i], float(scores[i])) for i in top_idx]
+        order = np.argsort(-scores)
+        results: list[tuple[Chunk, float]] = []
+        for i in order:
+            chunk = self.chunks[i]
+            if phone_ids is not None and chunk.phone_id not in phone_ids:
+                continue
+            results.append((chunk, float(scores[i])))
+            if len(results) >= k:
+                break
+        return results
 
     def search_phones(self, query: str, k: int = 3) -> list[tuple[int, str, float]]:
         """Return the top-k *phones* relevant to a query (aggregated scores).
