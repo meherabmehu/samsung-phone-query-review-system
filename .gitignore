@@ -48,6 +48,11 @@ desktop.ini
 # Jupyter
 .ipynb_checkpoints/
 
+# Local SQLite databases (tests / dev)
+*.db
+*.sqlite
+*.sqlite3
+
 # Temporary / scratch
 tmp/
 *.tmp
