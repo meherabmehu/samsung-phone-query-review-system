@@ -18,6 +18,7 @@ capabilities into one working application:
 | **RAG chatbot** | Retrieves relevant phone data and answers specification, comparison and ranking questions without hallucinating. |
 | **Multi-agent system** | A Specification Retrieval Agent and a Product Review Agent collaborate to write detailed reviews. |
 | **FastAPI** | REST API with validation, error handling, logging and interactive Swagger docs. |
+| **Web UI** | A premium browser interface (chat + review + phone browser) served at `/`. |
 
 ## 2. Assignment Objective
 
@@ -76,9 +77,10 @@ Pytest.
 ```
 samsung-phone-query-review-system/
 ├── app/
-│   ├── main.py                 # FastAPI app + error handling
+│   ├── main.py                 # FastAPI app + web UI + error handling
 │   ├── config.py               # settings from .env
 │   ├── logging_setup.py        # central logging
+│   ├── static/index.html       # premium web UI (chat + review + browser)
 │   ├── api/routes.py           # REST endpoints
 │   ├── database/
 │   │   ├── connection.py       # engine/session
@@ -184,7 +186,7 @@ Interactive Swagger UI: **`http://localhost:8000/docs`**
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/` | Service info |
+| GET | `/` | Web UI (chat + review + phone browser) |
 | GET | `/health` | Liveness + DB check |
 | GET | `/phones` | List all phones (summary) |
 | GET | `/phones/{phone_name}` | Full spec sheet for one phone (fuzzy name) |
@@ -272,6 +274,11 @@ PY
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 # open http://localhost:8000/docs
 ```
+
+The app also ships with a **web UI** at `http://localhost:8000/` — a premium
+chat interface where you can browse the scraped phones, ask questions, generate
+comparisons and run multi-agent reviews, all backed by the same API. Swagger
+(`/docs`) remains available for the raw API.
 
 ## 20. Running Tests
 

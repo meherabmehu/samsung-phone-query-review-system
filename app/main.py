@@ -6,15 +6,19 @@ database / RAG / agent pipeline.
 """
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
 from app.logging_setup import get_logger
 
 logger = get_logger(__name__)
+
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
 
 @asynccontextmanager
@@ -36,6 +40,15 @@ app = FastAPI(
 )
 
 app.include_router(router)
+
+
+@app.get("/", include_in_schema=False)
+def home() -> FileResponse:
+    """Serve the web UI."""
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.exception_handler(Exception)

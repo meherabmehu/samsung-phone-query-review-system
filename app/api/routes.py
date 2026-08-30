@@ -84,15 +84,6 @@ def _phone_to_detail(p: Phone, db: Session) -> PhoneDetail:
     )
 
 
-@router.get("/", tags=["meta"])
-def root() -> dict:
-    return {
-        "service": "Samsung Phone Query and Review System",
-        "docs": "/docs",
-        "health": "/health",
-    }
-
-
 @router.get("/health", response_model=HealthResponse, tags=["meta"])
 def health(db: Session = Depends(get_db)) -> HealthResponse:
     """Liveness check that also verifies the database."""

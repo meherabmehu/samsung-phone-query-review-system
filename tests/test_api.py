@@ -5,7 +5,8 @@ from __future__ import annotations
 def test_root(client):
     resp = client.get("/")
     assert resp.status_code == 200
-    assert "service" in resp.json()
+    # The root path now serves the web UI (HTML), not JSON.
+    assert "Samsung Phone Query" in resp.text
 
 
 def test_health(client):
@@ -81,5 +82,5 @@ def test_openapi_schema(client):
     resp = client.get("/openapi.json")
     assert resp.status_code == 200
     paths = resp.json()["paths"]
-    for expected in ["/", "/health", "/phones", "/phones/{phone_name}", "/query", "/chat", "/review"]:
+    for expected in ["/health", "/phones", "/phones/{phone_name}", "/query", "/chat", "/review"]:
         assert expected in paths
