@@ -575,23 +575,33 @@
   function closeDrawer() { drawer.classList.remove("open"); overlay.classList.remove("show"); }
 
   /* ---------- chat / review ---------- */
+  async function apiPost(path, payload) {
+    const r = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    let d = null;
+    try { d = await r.json(); } catch (e) { /* non-JSON body */ }
+    if (!r.ok) {
+      const detail = (d && (d.detail || d.review)) || ("HTTP " + r.status);
+      throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    }
+    return d;
+  }
+
   async function sendChat(text) {
     if (!text.trim()) return;
     addMessage("user", text);
     sendBtn.disabled = true;
     showTyping();
     try {
-      const r = await fetch("/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
-      });
-      const d = await r.json();
+      const d = await apiPost("/chat", { message: text });
       hideTyping();
-      addMessage("assistant", d.answer || d.detail || "No response.", d.sources);
+      addMessage("assistant", d.answer || "No response.", d.sources);
     } catch (e) {
       hideTyping();
-      addMessage("assistant", "⚠️ Could not reach the API. Is the server running?");
+      addMessage("assistant", "⚠️ " + (e.message || "Could not reach the API.") + "\n\n*(Is the server running? Check the terminal where you started uvicorn.)*");
     } finally {
       sendBtn.disabled = false;
     }
@@ -603,17 +613,12 @@
     sendBtn.disabled = true;
     showTyping();
     try {
-      const r = await fetch("/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone_name: name }),
-      });
-      const d = await r.json();
+      const d = await apiPost("/review", { phone_name: name });
       hideTyping();
-      addMessage("assistant", d.review || d.detail || "No review generated.", [d.phone_name]);
+      addMessage("assistant", d.review || "No review generated.", [d.phone_name]);
     } catch (e) {
       hideTyping();
-      addMessage("assistant", "⚠️ Could not reach the API. Is the server running?");
+      addMessage("assistant", "⚠️ " + (e.message || "Could not reach the API.") + "\n\n*(Is the server running? Check the terminal where you started uvicorn.)*");
     } finally {
       sendBtn.disabled = false;
     }
