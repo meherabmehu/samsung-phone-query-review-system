@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.agents.crew import run_review_workflow
 from app.config import settings
-from app.database.connection import get_db
+from app.database.connection import get_db, get_session
 from app.database.crud import (
     count_phones,
     get_specifications,
@@ -39,7 +39,9 @@ _chatbot: Chatbot | None = None
 def _get_chatbot() -> Chatbot:
     global _chatbot
     if _chatbot is None:
-        _chatbot = build_chatbot(get_db)
+        # get_session() returns a real Session (unlike get_db, which is a
+        # FastAPI dependency generator).
+        _chatbot = build_chatbot(get_session)
     return _chatbot
 
 
