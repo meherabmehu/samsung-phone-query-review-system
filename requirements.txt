@@ -1,0 +1,29 @@
+# Web framework
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+
+# Data validation / settings
+pydantic==2.13.4
+pydantic-settings==2.15.0
+
+# Database
+sqlalchemy==2.0.52
+psycopg2-binary==2.9.12
+
+# Web scraping
+requests==2.33.0
+beautifulsoup4==4.15.0
+lxml==6.1.1
+
+# Configuration
+python-dotenv==1.2.3
+
+# RAG / retrieval (embeddings)
+numpy==2.3.5
+scikit-learn==1.6.1
+sentence-transformers==6.0.0
+torch==2.13.0
+
+# Testing
+pytest==9.0.3
+httpx==0.28.1
