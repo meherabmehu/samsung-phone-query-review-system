@@ -65,6 +65,43 @@ def _spec_line(session: Session, phone: Phone, category: str, key: str) -> str |
     return get_spec_value(session, phone, category, key)
 
 
+# Keyword -> spec category mapping used to deterministically include the
+# right spec section for "camera / battery / display / performance" questions,
+# independent of embedding quality.
+_CATEGORY_KEYWORDS: dict[str, str] = {
+    "camera": "Main Camera",
+    "selfie": "Selfie camera",
+    "battery": "Battery",
+    "charging": "Battery",
+    "display": "Display",
+    "screen": "Display",
+    "processor": "Platform",
+    "chipset": "Platform",
+    "cpu": "Platform",
+    "gpu": "Platform",
+    "performance": "Platform",
+    "storage": "Memory",
+    "memory": "Memory",
+    "ram": "Memory",
+    "weight": "Body",
+    "dimension": "Body",
+    "price": "Misc",
+    "connectivity": "Comms",
+    "wifi": "Comms",
+    "bluetooth": "Comms",
+}
+
+
+def _target_categories(query: str) -> list[str]:
+    """Return the spec categories explicitly asked about in the query."""
+    q = query.lower()
+    categories = []
+    for keyword, category in _CATEGORY_KEYWORDS.items():
+        if keyword in q and category not in categories:
+            categories.append(category)
+    return categories
+
+
 def _rank_intent(query: str) -> str | None:
     """Return the ranking column key if the query is a superlative question."""
     q = query.lower()
@@ -194,11 +231,32 @@ class Chatbot:
         # Constrain retrieval to the resolved phone so variants (FE/Ultra)
         # do not leak into a single-phone answer.
         hits = retriever.search(f"{phone.name} {query}", k=4, phone_ids=[phone.id])
-        if not hits:
-            # Fall back to the full spec sheet if no chunk matched.
+
+        # Keep retrieval hits, deduped by category.
+        chunks: list = []
+        seen_categories: set[str] = set()
+        for h, _s in hits:
+            if h.category not in seen_categories:
+                seen_categories.add(h.category)
+                chunks.append(h)
+
+        # Deterministically include the spec categories the user asked about
+        # (e.g. "camera" -> Main Camera) so answers stay grounded even when
+        # embedding similarity is weak.
+        for category in _target_categories(query):
+            if category in seen_categories:
+                continue
+            for chunk in retriever.chunks:
+                if chunk.phone_id == phone.id and chunk.category == category:
+                    chunks.append(chunk)
+                    seen_categories.add(category)
+                    break
+
+        if not chunks:
+            # Fall back to the full spec sheet if nothing matched.
             facts = phone_to_full_text(phone)
         else:
-            facts = "\n".join(f"- {h.text}" for h, _s in hits)
+            facts = "\n".join(f"- {h.text}" for h in chunks)
         grounded = self._compose(
             query=query,
             facts=facts,

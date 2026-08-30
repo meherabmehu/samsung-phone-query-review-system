@@ -71,6 +71,15 @@ def get_db() -> Iterator[Session]:
         db.close()
 
 
+def reset_engine() -> None:
+    """Drop the cached engine/session factory (used by tests to switch URLs)."""
+    global _engine, _SessionLocal
+    if _engine is not None:
+        _engine.dispose()
+    _engine = None
+    _SessionLocal = None
+
+
 def init_db(database_url: str | None = None) -> None:
     """Create all tables (idempotent). Used by scripts/init_db.py and tests."""
     from app.database import models  # noqa: F401  (registers tables on Base)
